@@ -2,11 +2,8 @@ using UnitConversionApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddScoped<IConversionService, ConversionService>();
-
-// Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -16,32 +13,27 @@ builder.Services.AddSwaggerGen(c =>
         Version     = "v1",
         Description = "Converts numerical values between units of measurement."
     });
-
-    // Include XML comments for richer Swagger docs
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-        c.IncludeXmlComments(xmlPath);
 });
 
-// ── Pipeline ─────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// ✅ Always enable Swagger (not just in Development)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-       c.SwaggerEndpoint("/swagger/v1/swagger.json", "Unit Conversion API v1");
-       c.RoutePrefix = string.Empty;
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Unit Conversion API v1");
+    c.RoutePrefix = "swagger"; // ← change from empty string to "swagger"
+});
 
-app.UseHttpsRedirection();
+// ✅ Remove UseHttpsRedirection — Render handles HTTPS externally
+// app.UseHttpsRedirection();  ← DELETE or comment this line
+
 app.UseAuthorization();
 app.MapControllers();
 
+// ✅ Add a root redirect so "/" goes to swagger
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
 app.Run();
 
-// Needed for integration-test WebApplicationFactory
 public partial class Program { }
